@@ -54,7 +54,7 @@ class psqlWebShell {
 		$quote_fix = str_replace('\\', '\\\\', $cmd);
 
 		// escape the double quotes plz
-		$quote_fix = str_replace('"', '\"', $cmd);
+		$quote_fix = str_replace('"', '\"', $quote_fix);
 
 		// prepare the command
 		$prepd_cmd = 'psql -U '.$this->user.' -p '.$this->port.' -d '.$db.' -c "' . $quote_fix . '"';
