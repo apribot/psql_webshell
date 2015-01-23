@@ -34,8 +34,6 @@ $pshell->user      = 'postgres';
                                                 
 */
 
-
-
 /****
  * 
  *  Hi, i'm the psqlWebShell thingy
@@ -48,8 +46,13 @@ class psqlWebShell {
 	public $defaultdb;
 	public $cur_db;
 
-	public function runPSQLCMD($cmd, $db)
+	public function runPSQLCMD($cmd, $db, $slashCDetect)
 	{
+		// have to manually check for \c db_name
+		if($slashCDetect && $this->isSlashC($cmd)) {
+			return 'You are now connected to database "'.$this->cur_db.'" as user "'.$this->user.'".'."\n";
+		}
+
 		// escape backslashes
 		$quote_fix = str_replace('\\', '\\\\', $cmd);
 
@@ -80,6 +83,21 @@ class psqlWebShell {
 		return $returned;
 	}
 
+	public function isSlashC($cmd) {
+		$cmd = trim($cmd);
+		$cmd_ar = explode(' ', $cmd);
+		var_dump($cmd_ar = explode(' ', $cmd));
+		if($cmd_ar[0] == '\c' && in_array($cmd_ar[1], $this->getDBArray()) ) {
+			// probably better way to do this, but i've lost controll
+			$this->cur_db   = $cmd_ar[1];
+			$_SESSION['db'] = $cmd_ar[1];
+			$_POST['db']    = $cmd_ar[1];
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	public function getDBArray() 
 	{
 		// query postgres for a list of dbs
@@ -87,6 +105,11 @@ class psqlWebShell {
 
 		// splode it into array
 		$dbs_ar = explode("\n", $dbs_raw);
+
+		// trim whitespace
+		foreach($dbs_ar as &$dbn) {
+			$dbn = trim($dbn);
+		}
 
 		// shift off the title, line, result number and trailing linebreak... did i go too far with shift/pop? no.
 		array_shift($dbs_ar);
@@ -103,7 +126,7 @@ class psqlWebShell {
 		// create a nice select element and make the current database the default selection
 		$db_html = '<select name="'.$id.'">';
 		foreach ($ar as $value) {
-			$db_html .= "<option ". ( trim($value) == $this->cur_db ? "SELECTED" : "" ) . " value='" . trim($value) . "'>" . trim($value) . "</option>\n";
+			$db_html .= "<option ". ( $value == $this->cur_db ? "SELECTED" : "" ) . " value='" . $value . "'>" . $value . "</option>\n";
 		}
 		$db_html .= '</select>';	
 		return $db_html;
@@ -131,10 +154,6 @@ if(!isset($_POST['db'])) {
 }
 $pshell->cur_db = $_SESSION['db'];
 
-// get the list of available dbs
-$dbar = $pshell->getDBArray();
-$db_html = $pshell->getDropdownList($dbar, 'db');
-
 // clear buffer if requested, ignore command input
 if(isset($_POST['clear'])) {
 	$_SESSION['history'] = "-- cleared --\n";
@@ -142,12 +161,17 @@ if(isset($_POST['clear'])) {
 } else if(isset($_POST['command'])) {
 	// otherwise, run command
 	$cmd = $_POST['command'];
-	$returned = $pshell->runPSQLCMD($cmd, $pshell->cur_db);
+	$returned = $pshell->runPSQLCMD($cmd, $pshell->cur_db, true);
 
 	// update log buffer thing
 	$_SESSION['history'] .= $cmd . "\n";
 	$_SESSION['history'] .= $returned . "\n";
 }
+
+// get the list of available dbs
+$dbar = $pshell->getDBArray();
+$db_html = $pshell->getDropdownList($dbar, 'db');
+
 
 // get log history buffer thing for echo in body, ok
 $log = $_SESSION['history'];
