@@ -20,7 +20,7 @@ $selectioncolor    = '#00E';
 $pshell            = new psqlWebShell;
 $pshell->port      = '5432';
 $pshell->defaultdb = 'postgres';
-$pshell->user      = 'postgres';
+$pshell->user      = 'justin';
 
 
 /**
@@ -46,7 +46,7 @@ class psqlWebShell {
 	public $defaultdb;
 	public $cur_db;
 
-	public function runPSQLCMD($cmd, $db, $slashCDetect)
+	public function runPSQLCMD($cmd, $db, $slashCDetect = false)
 	{
 		// have to manually check for \c db_name
 		if($slashCDetect && $this->isSlashC($cmd)) {
